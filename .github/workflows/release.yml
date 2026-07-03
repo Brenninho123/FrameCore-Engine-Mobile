@@ -14,7 +14,7 @@ jobs:
 
     steps:
       # =========================
-      # CHECKOUT REPO
+      # CHECKOUT
       # =========================
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       # =========================
-      # SETUP HAXE
+      # HAXE SETUP
       # =========================
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
@@ -30,7 +30,7 @@ jobs:
           haxe-version: 4.3.7
 
       # =========================
-      # CACHE HAXELIB
+      # CACHE (OPTIONAL SAFE)
       # =========================
       - name: Cache haxelib
         uses: actions/cache@v4
@@ -61,14 +61,17 @@ jobs:
           if exist setup\windows.bat call setup\windows.bat
 
       # =========================
-      # BUILD GAME
+      # CLEAN BUILD (CRITICAL FIX)
       # =========================
-      - name: Build game
+      - name: Build game (CLEAN + VERBOSE)
         shell: cmd
-        run: haxelib run lime build windows -release -D officialBuild
+        working-directory: .
+        run: |
+          haxelib run lime clean windows
+          haxelib run lime build windows -release -D officialBuild -clean -verbose
 
       # =========================
-      # VERIFY GENERATED ASSETS
+      # VERIFY ASSETS (HARD FAIL)
       # =========================
       - name: Verify generated assets
         shell: pwsh
@@ -76,41 +79,52 @@ jobs:
           $assets = "export/release/windows/bin/assets"
 
           if (!(Test-Path $assets)) {
-            Write-Host "ERROR: Assets folder not found!"
+            Write-Host "❌ CRITICAL: assets folder not generated"
             exit 1
           }
 
-          Write-Host ""
-          Write-Host "========================"
-          Write-Host "GENERATED ASSETS"
-          Write-Host "========================"
-
-          Get-ChildItem $assets
-
-          Write-Host ""
-          Write-Host "Checking important folders..."
-
-          foreach ($folder in @(
+          $required = @(
             "base_game",
             "week_assets",
             "images",
             "weeks",
             "songs",
             "shared",
-            "videos",
-            "fonts",
-            "data",
-            "music"
-          )) {
-            if (Test-Path "$assets/$folder") {
-              Write-Host "[OK] $folder"
+            "fonts"
+          )
+
+          foreach ($folder in $required) {
+            if (!(Test-Path "$assets/$folder")) {
+              Write-Host "❌ MISSING: $folder"
+              exit 1
             } else {
-              Write-Host "[MISSING] $folder"
+              Write-Host "✔ OK: $folder"
             }
           }
 
+          Write-Host "✅ All critical assets present"
+
       # =========================
-      # ZIP BUILD (SAFE CHECK)
+      # EXTRA SAFETY COPY (CI FIX BACKUP)
+      # =========================
+      - name: Force asset copy (CI fallback safety)
+        shell: pwsh
+        run: |
+          $src = "assets"
+          $dst = "export/release/windows/bin/assets"
+
+          if (!(Test-Path $dst)) {
+            New-Item -ItemType Directory -Path $dst -Force
+          }
+
+          robocopy $src $dst /E /NFL /NDL /NJH /NJS
+          if ($LASTEXITCODE -ge 8) {
+            Write-Host "❌ Robocopy failed"
+            exit 1
+          }
+
+      # =========================
+      # ZIP BUILD
       # =========================
       - name: Zip build
         shell: pwsh
@@ -118,18 +132,16 @@ jobs:
           $path = "export/release/windows/bin"
 
           if (!(Test-Path $path)) {
-            echo "Build folder not found!"
-            dir export/release/windows
+            Write-Host "❌ Build folder missing"
             exit 1
           }
 
-          Compress-Archive -Path "$path/*" -DestinationPath FrameCoreEngine-Windows.zip
+          Compress-Archive -Path "$path/*" -DestinationPath FrameCoreEngine-Windows.zip -Force
 
       # =========================
-      # CREATE RELEASE
+      # RELEASE
       # =========================
       - name: Create GitHub Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           files: FrameCoreEngine-Windows.zip
@@ -137,7 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # =========================
-      # NOTIFY DISCORD
+      # DISCORD NOTIFY
       # =========================
       - name: Notify Discord
         if: success()
@@ -153,10 +165,13 @@ jobs:
               @{
                 title = "Nueva release: $tag"
                 url = $releaseUrl
-                description = "Ya está disponible una nueva versión de FrameCore Engine. Mirá el changelog completo en el link."
+                description = "Build completado correctamente."
                 color = 5814783
               }
             )
           } | ConvertTo-Json -Depth 5
 
-          Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" -Method Post -Body $body -ContentType "application/json"
+          Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK }}" `
+            -Method Post `
+            -Body $body `
+            -ContentType "application/json"
