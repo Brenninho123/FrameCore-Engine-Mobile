@@ -1,9 +1,5 @@
 package;
 
-#if android
-import android.content.Context;
-#end
-
 import debug.FPSCounter;
 import flixel.graphics.FlxGraphic;
 import flixel.FlxGame;
@@ -74,7 +70,7 @@ class Main extends Sprite
 		StorageUtil.init();
 
 		#if android
-		Sys.setCwd(Path.addTrailingSlash(Context.getExternalFilesDir()));
+		Sys.setCwd(Path.addTrailingSlash(lime.system.System.documentsDirectory));
 		#elseif ios
 		Sys.setCwd(lime.system.System.applicationStorageDirectory);
 		#end
