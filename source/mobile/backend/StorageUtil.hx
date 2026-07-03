@@ -1,4 +1,4 @@
-package source.mobile.backend;
+package mobile.backend;
 
 import lime.utils.Assets;
 import openfl.utils.Assets as OpenFLAssets;
