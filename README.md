@@ -21,9 +21,6 @@ For this you can head over to [the wiki](https://shadowmario.github.io/psychengi
 
 There you can learn how to use the 212 PlayState funcions in your mod!
 
-## FrameCore Engine Team:
-* ArgMod's - FrameCore Engine Main Dev 
-
 ## Credits:
 * Shadow Mario - Main Programmer and Head of Psych Engine.
 * Riveren - Main Artist/Animator of Psych Engine.
@@ -52,9 +49,9 @@ There you can learn how to use the 212 PlayState funcions in your mod!
 
 ![Animated Dialogue Boxes](docs/img/dialogue.gif)
 
-## Reworked Main Menu
+## New Main Menu
 * A brand new menu that makes your experience even better!
-![Main Menu](<img width="1920" height="1080" alt="{728514F3-887B-484B-9F44-15073509FA1D}" src="https://github.com/user-attachments/assets/fc846c99-6b7c-4884-b713-c2aeff78c588" />)
+![Main Menu](docs/img/MainMenu.png)
 
 ## Mod Support
 * Probably one of the main points of this engine, you can code in .lua files outside of the source code, making your own weeks without even messing with the source!
